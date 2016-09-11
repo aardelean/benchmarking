@@ -1,0 +1,105 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.jooq:jooq-codegen:3.7.2'
+        classpath 'mysql:mysql-connector-java:5.1.37'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.3.1.RELEASE'
+    }
+}
+group 'home'
+version '1.0-SNAPSHOT'
+apply plugin: 'java'
+sourceSets {
+    main {
+        java {
+            srcDir 'src/generated/java'
+        }
+        resources {
+            srcDir 'dist'
+        }
+    }
+}
+apply plugin: 'application'
+apply plugin: 'spring-boot'
+
+sourceCompatibility = '1.8'
+mainClassName='home.vertx.qbit.jooq.StarterVerticle'
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+    maven { url "http://repo.spring.io/libs-snapshot" }
+}
+configurations {
+    provided
+}
+sourceSets {
+    main {
+        compileClasspath += configurations.provided
+        runtimeClasspath += configurations.provided
+    }
+    test {
+        compileClasspath += configurations.provided
+        runtimeClasspath += configurations.provided
+    }
+}
+
+dependencies {
+    compile "org.springframework.boot:spring-boot:1.3.5.RELEASE"
+    compile "org.springframework:spring-context:4.2.4.RELEASE"
+    //rest
+    compile 'io.advantageous.qbit:qbit-admin:1.6.0.RELEASE'
+    compile 'io.advantageous.qbit:qbit-vertx:1.6.0.RELEASE'
+    //database
+    compile 'org.apache.tomcat:tomcat-jdbc:8.0.28'
+    compile 'org.jooq:jooq:3.7.2'
+    compile "mysql:mysql-connector-java:5.1.36"
+    compile "org.projectlombok:lombok:1.16.4"
+    compile 'log4j:log4j:1.2.16'
+    compile 'org.slf4j:slf4j-api:1.7.13'
+    compile 'org.slf4j:jcl-over-slf4j:1.7.13'
+    compile 'org.slf4j:jul-to-slf4j:1.7.13'
+    compile 'org.slf4j:log4j-over-slf4j:1.7.13'
+    compile 'org.slf4j:slf4j-simple:1.7.13'
+    compile "io.vertx:vertx-core:3.2.1"
+    compile "io.vertx:vertx-sync:3.2.1"
+    compile "io.vertx:vertx-web:3.2.1"
+    compile "co.paralleluniverse:comsat-jooq:0.5.0"
+    compile "co.paralleluniverse:quasar-core:0.7.5:jdk8"
+    //test
+    testCompile 'junit:junit:4.11'
+}
+//database to dto generation for jooq tool
+def writer = new StringWriter()
+def xml = new groovy.xml.MarkupBuilder(writer)
+        .configuration('xmlns': 'http://www.jooq.org/xsd/jooq-codegen-3.7.0.xsd') {
+    jdbc() {
+        driver('com.mysql.jdbc.Driver')
+        url('jdbc:mysql://localhost:3306/')
+        user('root')
+        password('password')
+
+    }
+    generator() {
+        database() {
+            inputSchema('home')
+            outputSchemaToDefault(true)
+        }
+
+        generate([:]) {
+            pojos true
+            daos true
+        }
+        target() {
+            packageName('home.vertx.qbit.jooq.dao')
+            directory('src/generated/java')
+        }
+    }
+}
+
+org.jooq.util.GenerationTool.generate(
+        javax.xml.bind.JAXB.unmarshal(new StringReader(writer.toString()), org.jooq.util.jaxb.Configuration.class)
+)
